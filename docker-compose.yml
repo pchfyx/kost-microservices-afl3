@@ -1,0 +1,123 @@
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: kost-traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - kost-network
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: kost-auth-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  auth-middleware:
+    build: ./middleware/auth-middleware
+    container_name: kost-auth-middleware
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.middleware.rule=PathPrefix(`/private`)"
+      - "traefik.http.routers.middleware.entrypoints=web"
+      - "traefik.http.services.middleware.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  room-service:
+    build: ./services/room-service
+    container_name: kost-room-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rooms.rule=PathPrefix(`/rooms`)"
+      - "traefik.http.routers.rooms.entrypoints=web"
+      - "traefik.http.services.rooms.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  tenant-service:
+    build: ./services/tenant-service
+    container_name: kost-tenant-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tenants.rule=PathPrefix(`/tenants`)"
+      - "traefik.http.routers.tenants.entrypoints=web"
+      - "traefik.http.services.tenants.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  payment-service:
+    build: ./services/payment-service
+    container_name: kost-payment-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.payments.rule=PathPrefix(`/payments`)"
+      - "traefik.http.routers.payments.entrypoints=web"
+      - "traefik.http.services.payments.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  maintenance-service:
+    build: ./services/maintenance-service
+    container_name: kost-maintenance-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.maintenance.rule=PathPrefix(`/maintenance`)"
+      - "traefik.http.routers.maintenance.entrypoints=web"
+      - "traefik.http.services.maintenance.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: kost-rabbitmq
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    networks:
+      - kost-network
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: kost-notification-service
+    depends_on:
+      - rabbitmq
+      - websocket-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notifications.rule=PathPrefix(`/notifications`)"
+      - "traefik.http.routers.notifications.entrypoints=web"
+      - "traefik.http.services.notifications.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+  websocket-service:
+    build: ./services/websocket-service
+    container_name: kost-websocket-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.websocket.rule=PathPrefix(`/websocket`)"
+      - "traefik.http.routers.websocket.entrypoints=web"
+      - "traefik.http.services.websocket.loadbalancer.server.port=5000"
+    networks:
+      - kost-network
+
+networks:
+  kost-network:
+    driver: bridge
