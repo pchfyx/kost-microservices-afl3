@@ -247,7 +247,6 @@ kost-microservices-afl3/
 
 
 
-Thank you :D
 ## Conclusion
 
 This project demonstrates how a boarding house management system can be designed using a microservices architecture. By separating the system into multiple independent services, each service can focus on a specific responsibility. Docker Compose makes the system easier to run, while Traefik, RabbitMQ, WebSocket, and monitoring tools help demonstrate important concepts in microservices development.
